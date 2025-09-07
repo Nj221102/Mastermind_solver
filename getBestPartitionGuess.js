@@ -1,3 +1,5 @@
+import { calculateFeedback } from "./solverUtils"
+
 // Returns the guess that minimizes the largest partition size (minimax)
 export function getBestPartitionGuess(possibleCodes, allCodes) {
   let bestGuess = possibleCodes[0]

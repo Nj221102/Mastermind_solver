@@ -1,45 +1,6 @@
 "use client"
 import { useState, useMemo } from "react"
-import { getBestPartitionGuess } from "../getBestPartitionGuess"
-
-const PEGS = ["U", "D", "R", "L"]
-const SYMBOLS = { U: "↑", D: "↓", R: "→", L: "←" }
-
-function generateAllCodes() {
-  const res = []
-  for (const a of PEGS)
-    for (const b of PEGS)
-      for (const c of PEGS)
-        for (const d of PEGS)
-          res.push([a, b, c, d])
-  return res
-}
-
-function calculateFeedback(guess, secret) {
-  let black = 0
-  const guessCounts = { U: 0, D: 0, R: 0, L: 0 }
-  const secretCounts = { U: 0, D: 0, R: 0, L: 0 }
-  for (let i = 0; i < 4; i++) {
-    if (guess[i] === secret[i]) black++
-    else {
-      guessCounts[guess[i]]++
-      secretCounts[secret[i]]++
-    }
-  }
-  let white = 0
-  for (const p of PEGS) white += Math.min(guessCounts[p], secretCounts[p])
-  return [black, white]
-}
-
-function pickNextGuess(possibleCodes, allCodes, guessNumber) {
-  if (!possibleCodes.length) return null
-  // For first 3 guesses, use minimax partitioning
-  if (guessNumber <= 3) {
-    return getBestPartitionGuess(possibleCodes, allCodes)
-  }
-  // Otherwise, just pick the first remaining
-  return possibleCodes[0]
-}
+import { PEGS, SYMBOLS, generateAllCodes, calculateFeedback, getBestPartitionGuess } from "../solverUtils"
 
 function Pegs({ code }) {
   return (
@@ -122,6 +83,16 @@ export default function Page() {
           ? "Only one possibility remains—enter feedback to confirm."
           : `Filtered to ${filtered.length} possible codes. Enter feedback for the next guess.`
       )
+    }
+
+    function pickNextGuess(possibleCodes, allCodes, guessNumber) {
+      if (!possibleCodes.length) return null
+      // For first 3 guesses, use minimax partitioning
+      if (guessNumber <= 3) {
+        return getBestPartitionGuess(possibleCodes, allCodes)
+      }
+      // Otherwise, just pick the first remaining
+      return possibleCodes[0]
     }
 
     const remainingEstimate = useMemo(() => {
