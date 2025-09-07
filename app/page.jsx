@@ -26,61 +26,59 @@ export default function Page() {
     )
   }
 
-  // Generate all codes
+"use client"
+import { useState, useMemo } from "react"
 
-  "use client"
-  import { useState, useMemo } from "react"
+const PEGS = ["U", "D", "R", "L"]
+const SYMBOLS = { U: "↑", D: "↓", R: "→", L: "←" }
 
-  const PEGS = ["U", "D", "R", "L"]
-  const SYMBOLS = { U: "↑", D: "↓", R: "→", L: "←" }
+function generateAllCodes() {
+  const res = []
+  for (const a of PEGS)
+    for (const b of PEGS)
+      for (const c of PEGS)
+        for (const d of PEGS)
+          res.push([a, b, c, d])
+  return res
+}
 
-  function generateAllCodes() {
-    const res = []
-    for (const a of PEGS)
-      for (const b of PEGS)
-        for (const c of PEGS)
-          for (const d of PEGS)
-            res.push([a, b, c, d])
-    return res
-  }
-
-  function calculateFeedback(guess, secret) {
-    let black = 0
-    const guessCounts = { U: 0, D: 0, R: 0, L: 0 }
-    const secretCounts = { U: 0, D: 0, R: 0, L: 0 }
-    for (let i = 0; i < 4; i++) {
-      if (guess[i] === secret[i]) black++
-      else {
-        guessCounts[guess[i]]++
-        secretCounts[secret[i]]++
-      }
+function calculateFeedback(guess, secret) {
+  let black = 0
+  const guessCounts = { U: 0, D: 0, R: 0, L: 0 }
+  const secretCounts = { U: 0, D: 0, R: 0, L: 0 }
+  for (let i = 0; i < 4; i++) {
+    if (guess[i] === secret[i]) black++
+    else {
+      guessCounts[guess[i]]++
+      secretCounts[secret[i]]++
     }
-    let white = 0
-    for (const p of PEGS) white += Math.min(guessCounts[p], secretCounts[p])
-    return [black, white]
   }
+  let white = 0
+  for (const p of PEGS) white += Math.min(guessCounts[p], secretCounts[p])
+  return [black, white]
+}
 
-  function pickNextGuess(possibleCodes) {
-    return possibleCodes.length ? possibleCodes[0] : null
-  }
+function pickNextGuess(possibleCodes) {
+  return possibleCodes.length ? possibleCodes[0] : null
+}
 
-  function Pegs({ code }) {
-    return (
-      <div className="flex gap-2">
-        {code.map((p, i) => (
-          <span
-            key={i}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-md border bg-white text-xl shadow-sm"
-            title={p}
-          >
-            {SYMBOLS[p] || p}
-          </span>
-        ))}
-      </div>
-    )
-  }
+function Pegs({ code }) {
+  return (
+    <div className="flex gap-2">
+      {code.map((p, i) => (
+        <span
+          key={i}
+          className="inline-flex h-10 w-10 items-center justify-center rounded-md border bg-white text-xl shadow-sm"
+          title={p}
+        >
+          {SYMBOLS[p] || p}
+        </span>
+      ))}
+    </div>
+  )
+}
 
-  export default function Page() {
+export default function Page() {
     const [guessNumber, setGuessNumber] = useState(1)
     const [possibleCodes, setPossibleCodes] = useState(() => generateAllCodes())
     const [currentGuess, setCurrentGuess] = useState(["U", "D", "R", "L"])
