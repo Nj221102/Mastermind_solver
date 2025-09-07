@@ -1,5 +1,6 @@
 "use client"
 import { useState, useMemo } from "react"
+import { getBestPartitionGuess } from "../getBestPartitionGuess"
 
 const PEGS = ["U", "D", "R", "L"]
 const SYMBOLS = { U: "↑", D: "↓", R: "→", L: "←" }
@@ -30,8 +31,14 @@ function calculateFeedback(guess, secret) {
   return [black, white]
 }
 
-function pickNextGuess(possibleCodes) {
-  return possibleCodes.length ? possibleCodes[0] : null
+function pickNextGuess(possibleCodes, allCodes, guessNumber) {
+  if (!possibleCodes.length) return null
+  // For first 3 guesses, use minimax partitioning
+  if (guessNumber <= 3) {
+    return getBestPartitionGuess(possibleCodes, allCodes)
+  }
+  // Otherwise, just pick the first remaining
+  return possibleCodes[0]
 }
 
 function Pegs({ code }) {
@@ -53,7 +60,11 @@ function Pegs({ code }) {
 export default function Page() {
     const [guessNumber, setGuessNumber] = useState(1)
     const [possibleCodes, setPossibleCodes] = useState(() => generateAllCodes())
-    const [currentGuess, setCurrentGuess] = useState(["U", "D", "R", "L"])
+    // Use minimax for the first guess
+    const [currentGuess, setCurrentGuess] = useState(() => {
+      const allCodes = generateAllCodes()
+      return getBestPartitionGuess(allCodes, allCodes)
+    })
     const [history, setHistory] = useState([])
     const [blackInput, setBlackInput] = useState("0")
     const [whiteInput, setWhiteInput] = useState("0")
@@ -61,8 +72,9 @@ export default function Page() {
 
     function handleReset() {
       setGuessNumber(1)
-      setPossibleCodes(generateAllCodes())
-      setCurrentGuess(["U", "D", "R", "L"])
+      const allCodes = generateAllCodes()
+      setPossibleCodes(allCodes)
+      setCurrentGuess(getBestPartitionGuess(allCodes, allCodes))
       setHistory([])
       setBlackInput("0")
       setWhiteInput("0")
