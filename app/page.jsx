@@ -71,6 +71,17 @@ export default function Page() {
   const [whiteInput, setWhiteInput] = useState('0')
   const [message, setMessage] = useState('Enter feedback for the current guess.')
 
+  // Reset all state to start a new game
+  function handleReset() {
+    setGuessNumber(1)
+    setPossibleCodes(generateAllCodes())
+    setCurrentGuess(FIRST_GUESS)
+    setHistory([])
+    setBlackInput('0')
+    setWhiteInput('0')
+    setMessage('Enter feedback for the current guess.')
+  }
+
   // Reset if no possible codes remain (should not happen with valid feedback)
   useEffect(() => {
     if (possibleCodes.length === 0) {
@@ -165,6 +176,15 @@ export default function Page() {
       </header>
 
       <section className="mb-6 rounded-lg border bg-white p-5 shadow-sm">
+        <div className="mb-4 flex justify-end">
+          <button
+            type="button"
+            onClick={handleReset}
+            className="inline-flex items-center rounded-md bg-gray-200 px-3 py-1 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          >
+            Reset Game
+          </button>
+        </div>
         <div className="mb-4 flex items-center justify-between">
           <div>
             <div className="text-sm text-gray-600">Guess number</div>
