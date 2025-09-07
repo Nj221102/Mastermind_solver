@@ -75,6 +75,9 @@ export default function Page() {
       if (filtered.length === 1) {
         setCurrentGuess(filtered[0])
         setMessage("Only one possibility remains. This is your code!")
+        setGuessNumber((n) => n + 1)
+        setBlackInput("0")
+        setWhiteInput("0")
         return
       }
       // Use allCodes for minimax partitioning in first 3 guesses
