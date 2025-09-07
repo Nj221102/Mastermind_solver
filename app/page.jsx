@@ -1,23 +1,136 @@
-'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+export default function Page() {
+  // State variables
+  const [guessNumber, setGuessNumber] = useState(1)
+  const [possibleCodes, setPossibleCodes] = useState(() => generateAllCodes())
+  const [currentGuess, setCurrentGuess] = useState(['U', 'D', 'R', 'L'])
+  const [history, setHistory] = useState([])
+  const [blackInput, setBlackInput] = useState('0')
+  const [whiteInput, setWhiteInput] = useState('0')
+  const [message, setMessage] = useState('Enter feedback for the current guess.')
 
-// Symbols and mapping to pretty arrows
-const PEGS = ['U', 'D', 'R', 'L']
-const SYMBOLS = {
-  U: '↑',
-  D: '↓',
-  R: '→',
-  L: '←',
-}
+  // Utility: render pegs nicely
+  function Pegs({ code }) {
+    return (
+      <div className="flex gap-2">
+        {code.map((p, i) => (
+          <span
+            key={i}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-md border bg-white text-xl shadow-sm"
+            title={p}
+          >
+            {SYMBOLS[p] || p}
+          </span>
+        ))}
+      </div>
+    )
+  }
 
-// generateAllCodes: Create all 4^4 = 256 possible codes
+  // Generate all codes
+  function generateAllCodes() {
+    const res = []
+    for (const a of PEGS) {
+      for (const b of PEGS) {
+        for (const c of PEGS) {
+          for (const d of PEGS) {
+            res.push([a, b, c, d])
+          }
+        }
+      }
+    }
+    return res
+  }
+
+  // Feedback calculation
+  function calculateFeedback(guess, secret) {
+    let black = 0
+    const guessCounts = { U: 0, D: 0, R: 0, L: 0 }
+    const secretCounts = { U: 0, D: 0, R: 0, L: 0 }
+    for (let i = 0; i < 4; i++) {
+      if (guess[i] === secret[i]) {
+        black++
+      } else {
+        guessCounts[guess[i]]++
+        secretCounts[secret[i]]++
+      }
+    }
+    let white = 0
+    for (const p of PEGS) {
+      white += Math.min(guessCounts[p], secretCounts[p])
+    }
+    return [black, white]
+  }
+
+  // Pick next guess
+  function pickNextGuess(possibleCodes) {
+    return possibleCodes.length ? possibleCodes[0] : null
+  }
+
+  // Reset all state
+  function handleReset() {
+    setGuessNumber(1)
+    setPossibleCodes(generateAllCodes())
+    setCurrentGuess(['U', 'D', 'R', 'L'])
+    setHistory([])
+    setBlackInput('0')
+    setWhiteInput('0')
+    setMessage('Enter feedback for the current guess.')
+  }
+
+  // Handle feedback submission
+  function handleFeedback(e) {
+    e?.preventDefault?.()
+    const black = Number(blackInput)
+    const white = Number(whiteInput)
+    if (Number.isNaN(black) || Number.isNaN(white)) {
+      setMessage('Invalid input. Please enter numbers for black and white pegs.')
+      return
+    }
+    if (black < 0 || black > 4 || white < 0 || white > 4 || black + white > 4) {
+      setMessage('Invalid feedback. Each value must be 0-4 and their sum ≤ 4.')
+      return
+    }
+    if (black === 4) {
+      const newEntry = { guess: currentGuess, black, white }
+      setHistory((h) => [...h, newEntry])
+      setMessage('Correct! 🎉 The solver found your code.')
+      return
+    }
+    const filtered = possibleCodes.filter((code) => {
+      const [b, w] = calculateFeedback(currentGuess, code)
+      return b === black && w === white
+    })
+    const newEntry = { guess: currentGuess, black, white }
+    setHistory((h) => [...h, newEntry])
+    setPossibleCodes(filtered)
+    if (filtered.length === 0) {
+      setMessage('No codes match that feedback. Please re-check and try again.')
+      return
+    }
+    const next = pickNextGuess(filtered)
+    setCurrentGuess(next)
+    setGuessNumber((n) => n + 1)
+    setBlackInput('0')
+    setWhiteInput('0')
+    setMessage(
+      filtered.length === 1
+        ? 'Only one possibility remains—enter feedback to confirm.'
+        : `Filtered to ${filtered.length} possible codes. Enter feedback for the next guess.`
+    )
+  }
+
+  // Best-case remaining turns estimate
+  const remainingEstimate = useMemo(() => {
+    const n = possibleCodes.length
+    if (n <= 1) return 1
+    if (n <= 4) return 2
+    if (n <= 16) return 3
+    return 4
+  }, [possibleCodes.length])
 
   // Find the most optimal guess among possibleCodes (highest probability)
-  // If all are equally likely, just pick the first
   const optimalGuess = useMemo(() => {
     if (possibleCodes.length === 0) return null
-    // All codes are equally likely at this stage
     return possibleCodes[0]
   }, [possibleCodes])
 
@@ -38,7 +151,6 @@ const SYMBOLS = {
             Reset Game
           </button>
         </div>
-
         <div className="mb-4 flex items-center justify-between">
           <div>
             <div className="text-sm text-gray-600">Guess number</div>
@@ -116,7 +228,35 @@ const SYMBOLS = {
           {message}
         </div>
       </section>
-  }, [possibleCodes])
+
+      <section className="rounded-lg border bg-white p-5 shadow-sm">
+        <h2 className="mb-3 text-lg font-medium">History</h2>
+        {history.length === 0 ? (
+          <div className="text-sm text-gray-600">No guesses yet. First guess is U D R L.</div>
+        ) : (
+          <ul className="space-y-3">
+            {history.map((h, idx) => (
+              <li key={idx} className="flex items-center justify-between rounded-md border p-3">
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-gray-600">#{idx + 1}</span>
+                  <Pegs code={h.guess} />
+                </div>
+                <div className="text-sm text-gray-700">
+                  <span className="mr-3">Black: {h.black}</span>
+                  <span>White: {h.white}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <footer className="mt-8 text-center text-xs text-gray-500">
+        Tip: Provide consistent feedback. The solver filters to codes that produce the same feedback vs each guess.
+      </footer>
+    </main>
+  )
+}
 
   // Handle feedback submission
   function handleFeedback(e) {
