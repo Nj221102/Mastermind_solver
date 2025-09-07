@@ -98,7 +98,9 @@ export default function Page() {
         setMessage("No codes match that feedback. Please re-check and try again.")
         return
       }
-      const next = pickNextGuess(filtered)
+      // Use allCodes for minimax partitioning in first 3 guesses
+      const allCodes = generateAllCodes()
+      const next = pickNextGuess(filtered, allCodes, guessNumber + 1)
       setCurrentGuess(next)
       setGuessNumber((n) => n + 1)
       setBlackInput("0")
