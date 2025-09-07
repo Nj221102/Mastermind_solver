@@ -71,6 +71,12 @@ export default function Page() {
         setMessage("No codes match that feedback. Please re-check and try again.")
         return
       }
+      // If only one possibility remains, show it as the result immediately
+      if (filtered.length === 1) {
+        setCurrentGuess(filtered[0])
+        setMessage("Only one possibility remains. This is your code!")
+        return
+      }
       // Use allCodes for minimax partitioning in first 3 guesses
       const allCodes = generateAllCodes()
       const next = pickNextGuess(filtered, allCodes, guessNumber + 1)
@@ -79,9 +85,7 @@ export default function Page() {
       setBlackInput("0")
       setWhiteInput("0")
       setMessage(
-        filtered.length === 1
-          ? "Only one possibility remains—enter feedback to confirm."
-          : `Filtered to ${filtered.length} possible codes. Enter feedback for the next guess.`
+        `Filtered to ${filtered.length} possible codes. Enter feedback for the next guess.`
       )
     }
 
