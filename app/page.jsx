@@ -12,81 +12,110 @@ const SYMBOLS = {
 }
 
 // generateAllCodes: Create all 4^4 = 256 possible codes
-function generateAllCodes() {
-  const res = []
-  for (const a of PEGS) {
-    for (const b of PEGS) {
-      for (const c of PEGS) {
-        for (const d of PEGS) {
-          res.push([a, b, c, d])
-        }
-      }
-    }
-  }
-  return res
-}
 
-// calculateFeedback: Return [black, white] pegs for guess vs secret
-// - black: correct color and position
-// - white: correct color, wrong position (excluding black positions)
-function calculateFeedback(guess, secret) {
-  let black = 0
-  const guessCounts = { U: 0, D: 0, R: 0, L: 0 }
-  const secretCounts = { U: 0, D: 0, R: 0, L: 0 }
+  // Find the most optimal guess among possibleCodes (highest probability)
+  // If all are equally likely, just pick the first
+  const optimalGuess = useMemo(() => {
+    if (possibleCodes.length === 0) return null
+    // All codes are equally likely at this stage
+    return possibleCodes[0]
+  }, [possibleCodes])
 
-  // First pass: count blacks and collect counts for non-black positions
-  for (let i = 0; i < 4; i++) {
-    if (guess[i] === secret[i]) {
-      black++
-    } else {
-      guessCounts[guess[i]]++
-      secretCounts[secret[i]]++
-    }
-  }
+  return (
+    <main className="mx-auto max-w-3xl px-4 py-8">
+      <header className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-semibold tracking-tight">Mastermind Solver</h1>
+        <span className="text-sm text-gray-600">Deterministic codebreaker (4 pegs, U/D/R/L)</span>
+      </header>
 
-  // Whites are the sum of min(counts) across symbols
-  let white = 0
-  for (const p of PEGS) {
-    white += Math.min(guessCounts[p], secretCounts[p])
-  }
+      <section className="mb-6 rounded-lg border bg-white p-5 shadow-sm">
+        <div className="mb-4 flex justify-end">
+          <button
+            type="button"
+            onClick={handleReset}
+            className="inline-flex items-center rounded-md bg-gray-200 px-3 py-1 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          >
+            Reset Game
+          </button>
+        </div>
 
-  return [black, white]
-}
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <div className="text-sm text-gray-600">Guess number</div>
+            <div className="text-xl font-medium">{guessNumber}</div>
+          </div>
+          <div>
+            <div className="text-sm text-gray-600">Remaining possibilities</div>
+            <div className="text-xl font-medium">{possibleCodes.length}</div>
+          </div>
+          <div>
+            <div className="text-sm text-gray-600">Best-case remaining turns</div>
+            <div className="text-xl font-medium">≤ {remainingEstimate}</div>
+          </div>
+        </div>
 
-// pickNextGuess: per spec, pick the first item from possibleCodes
-function pickNextGuess(possibleCodes) {
-  return possibleCodes.length ? possibleCodes[0] : null
-}
+        {/* Show all possible codes and optimal suggestion if 4th guess and <=4 possibilities */}
+        {guessNumber === 4 && possibleCodes.length > 0 && possibleCodes.length <= 4 && (
+          <div className="mb-4 rounded-md border border-yellow-300 bg-yellow-50 p-4">
+            <div className="mb-2 text-sm font-semibold text-yellow-800">Possible codes remaining:</div>
+            <div className="flex flex-wrap gap-3 mb-2">
+              {possibleCodes.map((code, idx) => (
+                <div key={idx} className="flex items-center gap-2 rounded-md border bg-white px-3 py-2 shadow-sm">
+                  <Pegs code={code} />
+                  {optimalGuess && code.join('') === optimalGuess.join('') && (
+                    <span className="ml-2 rounded bg-indigo-100 px-2 py-1 text-xs font-semibold text-indigo-700">Optimal</span>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="text-sm text-yellow-700 flex items-center gap-2">
+              Suggestion: Try <span className="font-bold"><Pegs code={optimalGuess} /></span> for highest probability.
+            </div>
+          </div>
+        )}
 
-// initial first guess: U D R L as requested
-const FIRST_GUESS = ['U', 'D', 'R', 'L']
+        <div className="mb-4">
+          <div className="mb-2 text-sm text-gray-600">Current guess</div>
+          <Pegs code={currentGuess} />
+        </div>
 
-export default function Page() {
-  // State variables
-  const [guessNumber, setGuessNumber] = useState(1)
-  const [possibleCodes, setPossibleCodes] = useState(() => generateAllCodes())
-  const [currentGuess, setCurrentGuess] = useState(FIRST_GUESS)
-  const [history, setHistory] = useState([]) // { guess: string[], black: number, white: number }
-  const [blackInput, setBlackInput] = useState('0')
-  const [whiteInput, setWhiteInput] = useState('0')
-  const [message, setMessage] = useState('Enter feedback for the current guess.')
+        <form onSubmit={handleFeedback} className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <label className="flex flex-col">
+            <span className="mb-1 text-sm text-gray-700">Black pegs</span>
+            <input
+              type="number"
+              min={0}
+              max={4}
+              value={blackInput}
+              onChange={(e) => setBlackInput(e.target.value)}
+              className="rounded-md border px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            />
+          </label>
+          <label className="flex flex-col">
+            <span className="mb-1 text-sm text-gray-700">White pegs</span>
+            <input
+              type="number"
+              min={0}
+              max={4}
+              value={whiteInput}
+              onChange={(e) => setWhiteInput(e.target.value)}
+              className="rounded-md border px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            />
+          </label>
+          <div className="flex items-end">
+            <button
+              type="submit"
+              className="inline-flex w-full items-center justify-center rounded-md bg-indigo-600 px-4 py-2 font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            >
+              Submit Feedback
+            </button>
+          </div>
+        </form>
 
-  // Reset all state to start a new game
-  function handleReset() {
-    setGuessNumber(1)
-    setPossibleCodes(generateAllCodes())
-    setCurrentGuess(FIRST_GUESS)
-    setHistory([])
-    setBlackInput('0')
-    setWhiteInput('0')
-    setMessage('Enter feedback for the current guess.')
-  }
-
-  // Reset if no possible codes remain (should not happen with valid feedback)
-  useEffect(() => {
-    if (possibleCodes.length === 0) {
-      setMessage('No possible codes remain. Please check your previous feedback for mistakes.')
-    }
+        <div className="mt-4 rounded-md border border-indigo-200 bg-indigo-50 p-3 text-sm text-indigo-800">
+          {message}
+        </div>
+      </section>
   }, [possibleCodes])
 
   // Handle feedback submission
